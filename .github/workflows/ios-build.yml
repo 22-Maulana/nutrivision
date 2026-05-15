@@ -2,13 +2,13 @@ name: iOS Build
 
 on:
   push:
-    branches: [ "main" ] # Workflow akan berjalan otomatis setiap kali Anda push ke branch main
-  workflow_dispatch: # Memungkinkan Anda menjalankan build secara manual dari tab Actions di GitHub
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     name: Build iOS IPA
-    runs-on: macos-latest # Menggunakan server macOS terbaru dari GitHub
+    runs-on: macos-latest
 
     steps:
       - name: Checkout Repository
@@ -18,28 +18,29 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # Menggunakan versi stable terbaru untuk memastikan kompatibilitas
-          cache: true # Mempercepat build berikutnya dengan caching
+          cache: true
 
       - name: Install Dependencies
+        # Menambahkan working-directory agar masuk ke folder nutrivision
         run: flutter pub get
+        working-directory: nutrivision
 
       - name: Build iOS (No Codesign)
-        # --no-codesign digunakan karena kita tidak memerlukan sertifikat Apple Developer untuk sekadar build
+        # Menambahkan working-directory agar masuk ke folder nutrivision
         run: flutter build ios --release --no-codesign
+        working-directory: nutrivision
 
       - name: Create Payload and IPA
-        # Langkah ini merubah hasil build .app menjadi file .ipa yang siap dikumpulkan
+        # Menyesuaikan path folder hasil build
         run: |
-          cd build/ios/iphoneos
+          cd nutrivision/build/ios/iphoneos
           mkdir Payload
           cp -r Runner.app Payload
           zip -r NutriVision-iOS.ipa Payload
 
       - name: Upload Artifact
-        # Mengunggah file hasil build agar bisa Anda download di tab Actions
         uses: actions/upload-artifact@v4
         with:
           name: NutriVision-iOS-Release
-          path: build/ios/iphoneos/NutriVision-iOS.ipa
-          retention-days: 7 # File akan tersedia selama 7 hari
+          path: nutrivision/build/ios/iphoneos/NutriVision-iOS.ipa
+          retention-days: 7
