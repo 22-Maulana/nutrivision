@@ -1,0 +1,45 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ "main" ] # Workflow akan berjalan otomatis setiap kali Anda push ke branch main
+  workflow_dispatch: # Memungkinkan Anda menjalankan build secara manual dari tab Actions di GitHub
+
+jobs:
+  build:
+    name: Build iOS IPA
+    runs-on: macos-latest # Menggunakan server macOS terbaru dari GitHub
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          # Menggunakan versi stable terbaru untuk memastikan kompatibilitas
+          cache: true # Mempercepat build berikutnya dengan caching
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build iOS (No Codesign)
+        # --no-codesign digunakan karena kita tidak memerlukan sertifikat Apple Developer untuk sekadar build
+        run: flutter build ios --release --no-codesign
+
+      - name: Create Payload and IPA
+        # Langkah ini merubah hasil build .app menjadi file .ipa yang siap dikumpulkan
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload
+          zip -r NutriVision-iOS.ipa Payload
+
+      - name: Upload Artifact
+        # Mengunggah file hasil build agar bisa Anda download di tab Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: NutriVision-iOS-Release
+          path: build/ios/iphoneos/NutriVision-iOS.ipa
+          retention-days: 7 # File akan tersedia selama 7 hari
